@@ -19,8 +19,7 @@ on:
       - reopened
       - synchronize
 
-permissions:
-  contents: write-all
+permissions: write-all
 
 jobs:
   check-dist:
