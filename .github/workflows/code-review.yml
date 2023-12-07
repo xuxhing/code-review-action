@@ -44,7 +44,7 @@ jobs:
 
       - name: Code Review
         id: code-review
-        uses: ./dist/
+        uses: ./
         timeout-minutes: 30
         with:
           GITHUB_TOKEN: ${{ secrets.GIT_HUB_API_KEY }}
