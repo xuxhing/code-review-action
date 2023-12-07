@@ -108,7 +108,6 @@ async function getPullRequestDiff(
     pull_number,
     mediaType: { format: "diff" },
   });
-  // @ts-expect-error - response.data is a string
   return response.data;
 }
 
