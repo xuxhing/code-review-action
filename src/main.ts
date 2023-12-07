@@ -64,6 +64,8 @@ export async function run(): Promise<void> {
   if (comments.length > 0) {
     await submitReviewComment(pr.owner, pr.repo, pr.pull_number, comments)
   }
+
+  console.log("review finsh");
 }
 
 run().catch(error => {
