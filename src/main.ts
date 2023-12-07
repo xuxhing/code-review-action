@@ -5,6 +5,8 @@ import parseDiff, { Chunk, File } from 'parse-diff';
 import minimatch from 'minimatch';
 import axios from 'axios';
 
+axios.defaults.timeout = 300000;
+
 const GITHUB_TOKEN: string = core.getInput("GITHUB_TOKEN");
 const SMART_CODER_API_URL: string = core.getInput("SMART_CODER_API_URL");
 const SMART_CODER_API_KEY: string = core.getInput("SMART_CODER_API_KEY");
@@ -17,28 +19,28 @@ const octokit = new Octokit({ auth: GITHUB_TOKEN });
  */
 export async function run(): Promise<void> {
   
-  core.debug(`github-event-path: ${process.env.GITHUB_EVENT_PATH}`);
+  console.log(`github-event-path: ${process.env.GITHUB_EVENT_PATH}`);
 
-  const { repository, number, event } = JSON.parse(
+  const { action, repository, number, before, head  } = JSON.parse(
     readFileSync(process.env.GITHUB_EVENT_PATH || "", "utf8")
   );
 
   const pr = await getPullRequest(repository, number);
 
-  core.debug(`event.action: ${event.action}`);
+  core.debug(`event.action: ${action}`);
 
   let diff: string | null;  
-  if (event.action === "opened" || event.action === "reopened") {
+  if (action === "opened" || action === "reopened") {
     diff = await getPullRequestDiff(pr.owner, pr.repo, pr.pull_number);
-  } else if (event.action === "synchronize") {
+  } else if (action === "synchronize") {
     const response = await octokit.repos.compareCommits({
       headers: {
         accept: "application/vnd.github.v3.diff",
       },
       owner: pr.owner,
       repo: pr.repo,
-      base: event.before,
-      head: event.head,
+      base: before,
+      head: head,
     });
     diff = String(response.data);
   } else {
