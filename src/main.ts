@@ -16,12 +16,13 @@ const octokit = new Octokit({ auth: GITHUB_TOKEN });
  * @returns {Promise<void>} Resolves when the action is complete.
  */
 export async function run(): Promise<void> {
+  const pr = await getPullRequest();
   const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH ?? "", "utf8"));
 
   core.debug(`event.action: ${event.action}`);
 
   let diff: string | null;
-  const pr = await getPullRequest();
+  
   if (event.action === "opened" || event.action === "reopened") {
     diff = await getPullRequestDiff(pr.owner, pr.repo, pr.pull_number);
   } else if (event.action === "synchronize") {
@@ -223,7 +224,7 @@ async function request(file: File, pr: PullRequest, params: string) {
               let chunk;
               while ((chunk = reader.read()) !== null) {
                 buffer += decoder.decode(chunk, { stream: true });
-                
+
                 do {
                   // 循环匹配数据包(处理粘包)，不能匹配就退出解析循环去读取数据(处理数据包不完整)
                   const match = buffer.match(pattern);
