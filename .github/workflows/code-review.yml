@@ -10,9 +10,6 @@
 name: Code Review Action
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     types:
       - opened
@@ -22,7 +19,7 @@ on:
 permissions: write-all
 
 jobs:
-  check-dist:
+  code-review:
     runs-on: ubuntu-latest
 
     steps:
@@ -47,7 +44,7 @@ jobs:
 
       - name: Code Review
         id: code-review
-        uses: dist/
+        uses: ./dist/
         timeout-minutes: 30
         with:
           GITHUB_TOKEN: ${{ secrets.GIT_HUB_API_KEY }}
