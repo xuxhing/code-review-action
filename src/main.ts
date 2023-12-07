@@ -18,8 +18,6 @@ const octokit = new Octokit({ auth: GITHUB_TOKEN });
  * @returns {Promise<void>} Resolves when the action is complete.
  */
 export async function run(): Promise<void> {
-  
-  console.log(`github-event-path: ${process.env.GITHUB_EVENT_PATH}`);
 
   const data = JSON.parse(
     readFileSync(process.env.GITHUB_EVENT_PATH || "", "utf8")
@@ -227,6 +225,7 @@ async function request(file: File, pr: PullRequest, params: string) {
               let chunk;
               while ((chunk = reader.read()) !== null) {
                 buffer += decoder.decode(chunk, { stream: true });
+                core.debug(`buffer: ${buffer}`);
 
                 do {
                   // 循环匹配数据包(处理粘包)，不能匹配就退出解析循环去读取数据(处理数据包不完整)

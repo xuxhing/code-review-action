@@ -45,7 +45,6 @@ jobs:
       - name: Code Review
         id: code-review
         uses: ./
-        timeout-minutes: 30
         with:
           GITHUB_TOKEN: ${{ secrets.GIT_HUB_API_KEY }}
           SMART_CODER_API_URL: ${{ vars.SMART_CODER_API_URL }}
