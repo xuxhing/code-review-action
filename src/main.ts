@@ -4,6 +4,7 @@ import { Octokit } from '@octokit/rest'
 import parseDiff, { Chunk, File } from 'parse-diff'
 import minimatch from 'minimatch'
 import axios from 'axios'
+import { exit } from 'process'
 
 axios.defaults.timeout = 300000
 
@@ -69,8 +70,9 @@ export async function run(): Promise<void> {
 }
 
 run().catch(error => {
-  core.error('error:', error)
+  core.error('error:', error);
   if (error instanceof Error) core.setFailed(error.message)
+  exit(1);
 })
 
 interface PullRequest {
