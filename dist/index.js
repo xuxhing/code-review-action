@@ -14378,46 +14378,50 @@ const rest_1 = __nccwpck_require__(5375);
 const parse_diff_1 = __importDefault(__nccwpck_require__(4833));
 const minimatch_1 = __importDefault(__nccwpck_require__(2002));
 const axios_1 = __importDefault(__nccwpck_require__(8757));
-const GITHUB_TOKEN = core.getInput("GITHUB_TOKEN");
-const SMART_CODER_API_URL = core.getInput("SMART_CODER_API_URL");
-const SMART_CODER_API_KEY = core.getInput("SMART_CODER_API_KEY");
+axios_1.default.defaults.timeout = 300000;
+const GITHUB_TOKEN = core.getInput('GITHUB_TOKEN');
+const SMART_CODER_API_URL = core.getInput('SMART_CODER_API_URL');
+const SMART_CODER_API_KEY = core.getInput('SMART_CODER_API_KEY');
 const octokit = new rest_1.Octokit({ auth: GITHUB_TOKEN });
 /**
  * The main function for the action.
  * @returns {Promise<void>} Resolves when the action is complete.
  */
 async function run() {
-    const event = JSON.parse((0, fs_1.readFileSync)(process.env.GITHUB_EVENT_PATH ?? "", "utf8"));
-    core.debug(`event.action: ${event.action}`);
+    const data = JSON.parse((0, fs_1.readFileSync)(process.env.GITHUB_EVENT_PATH || '', 'utf8'));
+    const pr = await getPullRequest(data.repository, data.number);
+    core.debug(`event.action: ${data.action}`);
     let diff;
-    const pr = await getPullRequest();
-    if (event.action === "opened" || event.action === "reopened") {
+    if (data.action === 'opened' || data.action === 'reopened') {
         diff = await getPullRequestDiff(pr.owner, pr.repo, pr.pull_number);
     }
-    else if (event.action === "synchronize") {
+    else if (data.action === 'synchronize') {
         const response = await octokit.repos.compareCommits({
             headers: {
-                accept: "application/vnd.github.v3.diff",
+                accept: 'application/vnd.github.v3.diff'
             },
             owner: pr.owner,
             repo: pr.repo,
-            base: event.before,
-            head: event.head,
+            base: data.before,
+            head: data.head
         });
         diff = String(response.data);
     }
     else {
-        core.warning(`Unsupported event: ${process.env.GITHUB_EVENT_NAME}`);
+        core.warning(`Unsupported event: ${data.action}`);
         return;
     }
     if (!diff) {
-        core.debug("No diff found");
+        core.debug('No diff found');
         return;
     }
     const parsed = (0, parse_diff_1.default)(diff);
-    const excludePatterns = core.getInput("exclude").split(",").map((s) => s.trim());
-    const filtered = parsed.filter((file) => {
-        return !excludePatterns.some((pattern) => (0, minimatch_1.default)(file.to ?? "", pattern));
+    const excludePatterns = core
+        .getInput('exclude')
+        .split(',')
+        .map(s => s.trim());
+    const filtered = parsed.filter(file => {
+        return !excludePatterns.some(pattern => (0, minimatch_1.default)(file.to ?? '', pattern));
     });
     const comments = await analyze(filtered, pr);
     if (comments.length > 0) {
@@ -14425,24 +14429,23 @@ async function run() {
     }
 }
 exports.run = run;
-run().catch((error) => {
-    core.error("error:", error);
+run().catch(error => {
+    core.error('error:', error);
     if (error instanceof Error)
         core.setFailed(error.message);
 });
-async function getPullRequest() {
-    const { repository, number } = JSON.parse((0, fs_1.readFileSync)(process.env.GITHUB_EVENT_PATH || "", "utf8"));
+async function getPullRequest(repository, number) {
     const response = await octokit.pulls.get({
         owner: repository.owner.login,
         repo: repository.name,
-        pull_number: number,
+        pull_number: number
     });
     return {
         owner: repository.owner.login,
         repo: repository.name,
         pull_number: number,
-        title: response.data.title ?? "",
-        description: response.data.body ?? "",
+        title: response.data.title ?? '',
+        description: response.data.body ?? ''
     };
 }
 async function getPullRequestDiff(owner, repo, pull_number) {
@@ -14450,20 +14453,19 @@ async function getPullRequestDiff(owner, repo, pull_number) {
         owner,
         repo,
         pull_number,
-        mediaType: { format: "diff" },
+        mediaType: { format: 'diff' }
     });
-    // @ts-expect-error - response.data is a string
     return response.data;
 }
 async function analyze(files, pr) {
     const comments = [];
     for (const file of files) {
-        if (file.to === "/dev/null")
+        if (file.to === '/dev/null')
             continue; // Ignore deleted files
         for (const chunk of file.chunks) {
             const diff = format(chunk);
             const response = await request(file, pr, diff);
-            console.log("response:", response);
+            console.log('response:', response);
             // const aiResponse = await getAIResponse(prompt);
             if (response) {
                 const newComments = createComment(file, response);
@@ -14480,77 +14482,104 @@ function format(chunk) {
   ${chunk.content}
   ${chunk.changes
         // @ts-expect-error - ln and ln2 exists where needed
-        .map((c) => `${c.ln ? c.ln : c.ln2} ${c.content}`)
-        .join("\n")}
+        .map(c => `${c.ln ? c.ln : c.ln2} ${c.content}`)
+        .join('\n')}
   \`\`\`
   `;
 }
 function createComment(file, responses) {
-    return responses.flatMap((v) => {
+    return responses.flatMap(v => {
         if (!file.to) {
             return [];
         }
         return {
             body: v.reviewComment,
             path: file.to,
-            line: Number(v.lineNumber),
+            line: Number(v.lineNumber)
         };
     });
 }
 async function request(file, pr, params) {
     const functionId = extractFuncionId();
     if (!functionId) {
-        console.error("Unsupported api");
+        console.error('Unsupported api');
         return;
     }
     const read = async () => {
+        console.log({
+            functionId: functionId,
+            stepNumber: 1,
+            variables: [
+                {
+                    key: 'diff',
+                    type: 'TEXT',
+                    value: params
+                },
+                {
+                    key: 'file',
+                    type: 'TEXT',
+                    value: file.to
+                },
+                {
+                    key: 'title',
+                    type: 'TEXT',
+                    value: pr.title
+                },
+                {
+                    key: 'description',
+                    type: 'TEXT',
+                    value: pr.description
+                }
+            ]
+        });
         return new Promise((resolve, reject) => {
             (0, axios_1.default)({
-                method: "post",
+                method: 'post',
                 url: SMART_CODER_API_URL,
                 data: {
                     functionId: functionId,
                     stepNumber: 1,
                     variables: [
                         {
-                            key: "diff",
-                            type: "TEXT",
-                            value: params,
+                            key: 'diff',
+                            type: 'TEXT',
+                            value: params
                         },
                         {
-                            key: "file",
-                            type: "TEXT",
-                            value: file.to,
+                            key: 'file',
+                            type: 'TEXT',
+                            value: file.to
                         },
                         {
-                            key: "title",
-                            type: "TEXT",
-                            value: pr.title,
+                            key: 'title',
+                            type: 'TEXT',
+                            value: pr.title
                         },
                         {
-                            key: "description",
-                            type: "TEXT",
-                            value: pr.description,
-                        },
-                    ],
+                            key: 'description',
+                            type: 'TEXT',
+                            value: pr.description
+                        }
+                    ]
                 },
                 headers: {
-                    Accept: "text/event-stream",
-                    Authorization: `Bearer ${SMART_CODER_API_KEY}`,
+                    Accept: 'text/event-stream',
+                    Authorization: `Bearer ${SMART_CODER_API_KEY}`
                 },
-                responseType: "stream",
+                responseType: 'stream'
             })
-                .then((response) => {
+                .then(response => {
                 const chunks = [];
                 const reader = response.data;
-                const decoder = new TextDecoder("utf-8");
+                const decoder = new TextDecoder('utf-8');
                 const pattern = /data:.*?"done":(true|false)}\n\n/;
-                let buffer = "";
+                let buffer = '';
                 let bufferObj;
-                reader.on("readable", () => {
+                reader.on('readable', () => {
                     let chunk;
                     while ((chunk = reader.read()) !== null) {
                         buffer += decoder.decode(chunk, { stream: true });
+                        core.debug(`buffer: ${buffer}`);
                         do {
                             // 循环匹配数据包(处理粘包)，不能匹配就退出解析循环去读取数据(处理数据包不完整)
                             const match = buffer.match(pattern);
@@ -14558,21 +14587,21 @@ async function request(file, pr, params) {
                                 break;
                             }
                             buffer = buffer.substring(match[0].length);
-                            bufferObj = JSON.parse(match[0].replace("data:", ""));
+                            bufferObj = JSON.parse(match[0].replace('data:', ''));
                             const data = bufferObj.data;
                             if (!data)
-                                throw new Error("Empty Message Events");
+                                throw new Error('Empty Message Events');
                             chunks.push(data.message);
                         } while (true);
                     }
                 });
-                reader.on("end", () => {
-                    core.debug(`reader end: \n ${chunks.join("")}`);
-                    resolve(JSON.parse(chunks.join("")));
+                reader.on('end', () => {
+                    core.debug(`reader end: \n ${chunks.join('')}`);
+                    resolve(JSON.parse(chunks.join('')));
                 });
             })
                 .catch((reason) => {
-                core.error("reason:", reason);
+                core.error('reason:', reason);
             });
         });
     };
@@ -14592,7 +14621,7 @@ async function submitReviewComment(owner, repo, pull_number, comments) {
         repo,
         pull_number,
         comments,
-        event: "COMMENT",
+        event: 'COMMENT'
     });
 }
 
