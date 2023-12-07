@@ -125,7 +125,7 @@ async function analyze(
       console.log('response:', response)
       // const aiResponse = await getAIResponse(prompt);
       if (response) {
-        const newComments = createComment(file, response)
+        const newComments = createComment(file, response.reviews)
         if (newComments) {
           comments.push(...newComments)
         }
@@ -173,9 +173,9 @@ async function request(file: File, pr: PullRequest, params: string) {
   }
 
   console.log('file.to: ', file.to);
-  
+
   const read = async () => {
-    return new Promise<Array<{ lineNumber: string; reviewComment: string }>>(
+    return new Promise<{"reviews": [{ lineNumber: string; reviewComment: string }]}>(
       (resolve, reject) => {
         axios({
           method: 'post',
@@ -192,7 +192,7 @@ async function request(file: File, pr: PullRequest, params: string) {
               {
                 key: 'file',
                 type: 'TEXT',
-                value: "README.md"
+                value: file.to
               },
             ]
           },
@@ -217,10 +217,11 @@ async function request(file: File, pr: PullRequest, params: string) {
                 do {
                   // 循环匹配数据包(处理粘包)，不能匹配就退出解析循环去读取数据(处理数据包不完整)
                   const match = buffer.match(pattern)
-                  console.log('match', match);
+                  
                   if (!match) {
                     break
                   }
+                  console.log(match[0]);
 
                   buffer = buffer.substring(match[0].length)
                   bufferObj = JSON.parse(match[0].replace('data:', ''))
@@ -234,6 +235,9 @@ async function request(file: File, pr: PullRequest, params: string) {
 
             reader.on('end', () => {
               console.log("reader end:", chunks.join(''));
+              if (chunks.length === 0) {
+                return {"reviews": []};
+              }
               resolve(JSON.parse(chunks.join('')))
             })
           })
