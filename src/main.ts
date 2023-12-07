@@ -173,32 +173,6 @@ async function request(file: File, pr: PullRequest, params: string) {
   }
 
   const read = async () => {
-    console.log({
-      functionId: functionId,
-      stepNumber: 1,
-      variables: [
-        {
-          key: 'diff',
-          type: 'TEXT',
-          value: params
-        },
-        {
-          key: 'file',
-          type: 'TEXT',
-          value: file.to
-        },
-        {
-          key: 'title',
-          type: 'TEXT',
-          value: pr.title
-        },
-        {
-          key: 'description',
-          type: 'TEXT',
-          value: pr.description
-        }
-      ]
-    })
 
     return new Promise<Array<{ lineNumber: string; reviewComment: string }>>(
       (resolve, reject) => {
@@ -217,17 +191,17 @@ async function request(file: File, pr: PullRequest, params: string) {
               {
                 key: 'file',
                 type: 'TEXT',
-                value: file.to
+                value: "README.md"
               },
               {
                 key: 'title',
                 type: 'TEXT',
-                value: pr.title
+                value: "update"
               },
               {
                 key: 'description',
                 type: 'TEXT',
-                value: pr.description
+                value: "aaa"
               }
             ]
           },
