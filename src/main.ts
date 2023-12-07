@@ -8,10 +8,8 @@ import axios from 'axios';
 axios.defaults.timeout = 300000;
 
 const GITHUB_TOKEN: string = core.getInput("GITHUB_TOKEN");
-const GITHUB_EVENT_PATH: string = core.getInput("GITHUB_EVENT_PATH");
 const SMART_CODER_API_URL: string = core.getInput("SMART_CODER_API_URL");
 const SMART_CODER_API_KEY: string = core.getInput("SMART_CODER_API_KEY");
-
 
 const octokit = new Octokit({ auth: GITHUB_TOKEN });
 
@@ -21,32 +19,32 @@ const octokit = new Octokit({ auth: GITHUB_TOKEN });
  */
 export async function run(): Promise<void> {
   
-  console.log(`github-event-path: ${GITHUB_EVENT_PATH}`);
+  console.log(`github-event-path: ${process.env.GITHUB_EVENT_PATH}`);
 
-  const { action, repository, number, before, head  } = JSON.parse(
-    readFileSync(GITHUB_EVENT_PATH || "", "utf8")
+  const data = JSON.parse(
+    readFileSync(process.env.GITHUB_EVENT_PATH || "", "utf8")
   );
 
-  const pr = await getPullRequest(repository, number);
+  const pr = await getPullRequest(data.repository, data.number);
 
-  core.debug(`event.action: ${action}`);
+  core.debug(`event.action: ${data.action}`);
 
   let diff: string | null;  
-  if (action === "opened" || action === "reopened") {
+  if (data.action === "opened" || data.action === "reopened") {
     diff = await getPullRequestDiff(pr.owner, pr.repo, pr.pull_number);
-  } else if (action === "synchronize") {
+  } else if (data.action === "synchronize") {
     const response = await octokit.repos.compareCommits({
       headers: {
         accept: "application/vnd.github.v3.diff",
       },
       owner: pr.owner,
       repo: pr.repo,
-      base: before,
-      head: head,
+      base: data.before,
+      head: data.head,
     });
     diff = String(response.data);
   } else {
-    core.warning(`Unsupported event: ${process.env.GITHUB_EVENT_NAME}`);
+    core.warning(`Unsupported event: ${data.action}`);
     return
   }
 
