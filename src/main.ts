@@ -165,8 +165,6 @@ function createComment(
   })
 }
 
-
-
 async function submitReviewComment(
   owner: string,
   repo: string,
@@ -182,7 +180,7 @@ async function submitReviewComment(
   })
 }
 
-function extractFuncionId () {
+function extractFuncionId() {
   const pettern = /FUNCTION\/(\d+)\/runs/
   const matchs = SMART_CODER_API_URL.match(pettern)
   if (!matchs) {
@@ -192,89 +190,89 @@ function extractFuncionId () {
 }
 
 const api = {
-  request : async (file: File, pr: PullRequest, params: string) => {
+  request: async (file: File, pr: PullRequest, params: string) => {
     const functionId = extractFuncionId()
     if (!functionId) {
       console.error('Unsupported api')
       return
     }
-  
-    console.log('file.to: ', file.to);
-  
+
+    console.log('file.to: ', file.to)
+
     const read = async () => {
-      return new Promise<{"reviews": [{ lineNumber: string; reviewComment: string }]}>(
-        (resolve, reject) => {
-          axios({
-            method: 'post',
-            url: SMART_CODER_API_URL,
-            data: {
-              functionId: functionId,
-              stepNumber: 1,
-              variables: [
-                {
-                  key: 'diff',
-                  type: 'TEXT',
-                  value: params
-                },
-                {
-                  key: 'file',
-                  type: 'TEXT',
-                  value: file.to
-                },
-              ]
-            },
-            headers: {
-              Accept: 'text/event-stream',
-              Authorization: `Bearer ${SMART_CODER_API_KEY}`
-            },
-            responseType: 'stream'
+      return new Promise<{
+        reviews: [{ lineNumber: string; reviewComment: string }]
+      }>((resolve, reject) => {
+        axios({
+          method: 'post',
+          url: SMART_CODER_API_URL,
+          data: {
+            functionId: functionId,
+            stepNumber: 1,
+            variables: [
+              {
+                key: 'diff',
+                type: 'TEXT',
+                value: params
+              },
+              {
+                key: 'file',
+                type: 'TEXT',
+                value: file.to
+              }
+            ]
+          },
+          headers: {
+            Accept: 'text/event-stream',
+            Authorization: `Bearer ${SMART_CODER_API_KEY}`
+          },
+          responseType: 'stream'
+        })
+          .then(response => {
+            const chunks: String[] = []
+            const reader = response.data
+            const decoder = new TextDecoder('utf-8')
+            const pattern = /data:.*?"done":(true|false)}\n\n/
+            let buffer = ''
+            let bufferObj: any
+
+            reader.on('readable', () => {
+              let chunk
+              while ((chunk = reader.read()) !== null) {
+                buffer += decoder.decode(chunk, { stream: true })
+                do {
+                  // 循环匹配数据包(处理粘包)，不能匹配就退出解析循环去读取数据(处理数据包不完整)
+                  const match = buffer.match(pattern)
+
+                  if (!match) {
+                    break
+                  }
+                  console.log(match[0])
+
+                  buffer = buffer.substring(match[0].length)
+                  bufferObj = JSON.parse(match[0].replace('data:', ''))
+                  const data = bufferObj.data
+
+                  if (!data) throw new Error('Empty Message Events')
+                  chunks.push(data.message)
+                } while (true)
+              }
+            })
+
+            reader.on('end', () => {
+              console.log('reader end:', chunks.join(''))
+              if (chunks.length === 0) {
+                return { reviews: [] }
+              }
+              resolve(JSON.parse(chunks.join('')))
+            })
           })
-            .then(response => {
-              const chunks: String[] = []
-              const reader = response.data
-              const decoder = new TextDecoder('utf-8')
-              const pattern = /data:.*?"done":(true|false)}\n\n/
-              let buffer = ''
-              let bufferObj: any
-  
-              reader.on('readable', () => {
-                let chunk
-                while ((chunk = reader.read()) !== null) {
-                  buffer += decoder.decode(chunk, { stream: true })
-                  do {
-                    // 循环匹配数据包(处理粘包)，不能匹配就退出解析循环去读取数据(处理数据包不完整)
-                    const match = buffer.match(pattern)
-                    
-                    if (!match) {
-                      break
-                    }
-                    console.log(match[0])
-  
-                    buffer = buffer.substring(match[0].length)
-                    bufferObj = JSON.parse(match[0].replace('data:', ''))
-                    const data = bufferObj.data
-  
-                    if (!data) throw new Error('Empty Message Events')
-                    chunks.push(data.message)
-                  } while (true)
-                }
-              })
-  
-              reader.on('end', () => {
-                console.log("reader end:", chunks.join(''));
-                if (chunks.length === 0) {
-                  return {"reviews": []};
-                }
-                resolve(JSON.parse(chunks.join('')))
-              })
-            })
-            .catch((reason: any) => {
-              core.error('reason:', reason)
-            })
-        }
-      )
+          .catch((reason: any) => {
+            core.error('reason:', reason)
+          })
+      })
     }
-  
+
     return await read()
-  },
+  }
 }

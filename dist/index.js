@@ -14464,11 +14464,11 @@ async function analyze(files, pr) {
             continue; // Ignore deleted files
         for (const chunk of file.chunks) {
             const diff = format(chunk);
-            const response = await request(file, pr, diff);
+            const response = await api.request(file, pr, diff);
             console.log('response:', response);
             // const aiResponse = await getAIResponse(prompt);
             if (response) {
-                const newComments = createComment(file, response);
+                const newComments = createComment(file, response.reviews);
                 if (newComments) {
                     comments.push(...newComments);
                 }
@@ -14499,122 +14499,6 @@ function createComment(file, responses) {
         };
     });
 }
-async function request(file, pr, params) {
-    const functionId = extractFuncionId();
-    if (!functionId) {
-        console.error('Unsupported api');
-        return;
-    }
-    const read = async () => {
-        console.log({
-            functionId: functionId,
-            stepNumber: 1,
-            variables: [
-                {
-                    key: 'diff',
-                    type: 'TEXT',
-                    value: params
-                },
-                {
-                    key: 'file',
-                    type: 'TEXT',
-                    value: file.to
-                },
-                {
-                    key: 'title',
-                    type: 'TEXT',
-                    value: pr.title
-                },
-                {
-                    key: 'description',
-                    type: 'TEXT',
-                    value: pr.description
-                }
-            ]
-        });
-        return new Promise((resolve, reject) => {
-            (0, axios_1.default)({
-                method: 'post',
-                url: SMART_CODER_API_URL,
-                data: {
-                    functionId: functionId,
-                    stepNumber: 1,
-                    variables: [
-                        {
-                            key: 'diff',
-                            type: 'TEXT',
-                            value: params
-                        },
-                        {
-                            key: 'file',
-                            type: 'TEXT',
-                            value: file.to
-                        },
-                        {
-                            key: 'title',
-                            type: 'TEXT',
-                            value: pr.title
-                        },
-                        {
-                            key: 'description',
-                            type: 'TEXT',
-                            value: pr.description
-                        }
-                    ]
-                },
-                headers: {
-                    Accept: 'text/event-stream',
-                    Authorization: `Bearer ${SMART_CODER_API_KEY}`
-                },
-                responseType: 'stream'
-            })
-                .then(response => {
-                const chunks = [];
-                const reader = response.data;
-                const decoder = new TextDecoder('utf-8');
-                const pattern = /data:.*?"done":(true|false)}\n\n/;
-                let buffer = '';
-                let bufferObj;
-                reader.on('readable', () => {
-                    let chunk;
-                    while ((chunk = reader.read()) !== null) {
-                        buffer += decoder.decode(chunk, { stream: true });
-                        core.debug(`buffer: ${buffer}`);
-                        do {
-                            // 循环匹配数据包(处理粘包)，不能匹配就退出解析循环去读取数据(处理数据包不完整)
-                            const match = buffer.match(pattern);
-                            if (!match) {
-                                break;
-                            }
-                            buffer = buffer.substring(match[0].length);
-                            bufferObj = JSON.parse(match[0].replace('data:', ''));
-                            const data = bufferObj.data;
-                            if (!data)
-                                throw new Error('Empty Message Events');
-                            chunks.push(data.message);
-                        } while (true);
-                    }
-                });
-                reader.on('end', () => {
-                    core.debug(`reader end: \n ${chunks.join('')}`);
-                    resolve(JSON.parse(chunks.join('')));
-                });
-            })
-                .catch((reason) => {
-                core.error('reason:', reason);
-            });
-        });
-    };
-    return await read();
-}
-function extractFuncionId() {
-    const pettern = /FUNCTION\/(\d+)\/runs/;
-    const matchs = SMART_CODER_API_URL.match(pettern);
-    if (!matchs) {
-        return 0;
-    }
-    return matchs[1];
-}
 async function submitReviewComment(owner, repo, pull_number, comments) {
     await octokit.pulls.createReview({
         owner,
@@ -14624,6 +14508,92 @@ async function submitReviewComment(owner, repo, pull_number, comments) {
         event: 'COMMENT'
     });
 }
+function extractFuncionId() {
+    const pettern = /FUNCTION\/(\d+)\/runs/;
+    const matchs = SMART_CODER_API_URL.match(pettern);
+    if (!matchs) {
+        return 0;
+    }
+    return matchs[1];
+}
+const api = {
+    request: async (file, pr, params) => {
+        const functionId = extractFuncionId();
+        if (!functionId) {
+            console.error('Unsupported api');
+            return;
+        }
+        console.log('file.to: ', file.to);
+        const read = async () => {
+            return new Promise((resolve, reject) => {
+                (0, axios_1.default)({
+                    method: 'post',
+                    url: SMART_CODER_API_URL,
+                    data: {
+                        functionId: functionId,
+                        stepNumber: 1,
+                        variables: [
+                            {
+                                key: 'diff',
+                                type: 'TEXT',
+                                value: params
+                            },
+                            {
+                                key: 'file',
+                                type: 'TEXT',
+                                value: file.to
+                            }
+                        ]
+                    },
+                    headers: {
+                        Accept: 'text/event-stream',
+                        Authorization: `Bearer ${SMART_CODER_API_KEY}`
+                    },
+                    responseType: 'stream'
+                })
+                    .then(response => {
+                    const chunks = [];
+                    const reader = response.data;
+                    const decoder = new TextDecoder('utf-8');
+                    const pattern = /data:.*?"done":(true|false)}\n\n/;
+                    let buffer = '';
+                    let bufferObj;
+                    reader.on('readable', () => {
+                        let chunk;
+                        while ((chunk = reader.read()) !== null) {
+                            buffer += decoder.decode(chunk, { stream: true });
+                            do {
+                                // 循环匹配数据包(处理粘包)，不能匹配就退出解析循环去读取数据(处理数据包不完整)
+                                const match = buffer.match(pattern);
+                                if (!match) {
+                                    break;
+                                }
+                                console.log(match[0]);
+                                buffer = buffer.substring(match[0].length);
+                                bufferObj = JSON.parse(match[0].replace('data:', ''));
+                                const data = bufferObj.data;
+                                if (!data)
+                                    throw new Error('Empty Message Events');
+                                chunks.push(data.message);
+                            } while (true);
+                        }
+                    });
+                    reader.on('end', () => {
+                        console.log('reader end:', chunks.join(''));
+                        if (chunks.length === 0) {
+                            return { reviews: [] };
+                        }
+                        resolve(JSON.parse(chunks.join('')));
+                    });
+                })
+                    .catch((reason) => {
+                    core.error('reason:', reason);
+                });
+            });
+        };
+        return await read();
+    }
+};
 
 
 /***/ }),
