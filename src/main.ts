@@ -172,8 +172,9 @@ async function request(file: File, pr: PullRequest, params: string) {
     return
   }
 
+  console.log('file.to: ', file.to);
+  
   const read = async () => {
-
     return new Promise<Array<{ lineNumber: string; reviewComment: string }>>(
       (resolve, reject) => {
         axios({
@@ -193,16 +194,6 @@ async function request(file: File, pr: PullRequest, params: string) {
                 type: 'TEXT',
                 value: "README.md"
               },
-              {
-                key: 'title',
-                type: 'TEXT',
-                value: "update"
-              },
-              {
-                key: 'description',
-                type: 'TEXT',
-                value: "aaa"
-              }
             ]
           },
           headers: {
@@ -222,17 +213,14 @@ async function request(file: File, pr: PullRequest, params: string) {
             reader.on('readable', () => {
               let chunk
               while ((chunk = reader.read()) !== null) {
-
                 buffer += decoder.decode(chunk, { stream: true })
-
                 do {
                   // 循环匹配数据包(处理粘包)，不能匹配就退出解析循环去读取数据(处理数据包不完整)
                   const match = buffer.match(pattern)
+                  console.log('match', match);
                   if (!match) {
                     break
                   }
-
-                  console.log('buffer: ', buffer);
 
                   buffer = buffer.substring(match[0].length)
                   bufferObj = JSON.parse(match[0].replace('data:', ''))
