@@ -248,6 +248,7 @@ async function request(file: File, pr: PullRequest, params: string) {
             reader.on('readable', () => {
               let chunk
               while ((chunk = reader.read()) !== null) {
+
                 buffer += decoder.decode(chunk, { stream: true })
 
                 do {
@@ -256,6 +257,8 @@ async function request(file: File, pr: PullRequest, params: string) {
                   if (!match) {
                     break
                   }
+
+                  console.log('buffer: ', buffer);
 
                   buffer = buffer.substring(match[0].length)
                   bufferObj = JSON.parse(match[0].replace('data:', ''))
