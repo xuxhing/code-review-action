@@ -16,13 +16,13 @@ const octokit = new Octokit({ auth: GITHUB_TOKEN });
  * @returns {Promise<void>} Resolves when the action is complete.
  */
 export async function run(): Promise<void> {
+  core.debug(`${process.env.GITHUB_EVENT_PATH}`);
   const pr = await getPullRequest();
   const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH ?? "", "utf8"));
 
   core.debug(`event.action: ${event.action}`);
 
-  let diff: string | null;
-  
+  let diff: string | null;  
   if (event.action === "opened" || event.action === "reopened") {
     diff = await getPullRequestDiff(pr.owner, pr.repo, pr.pull_number);
   } else if (event.action === "synchronize") {
