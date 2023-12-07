@@ -16,9 +16,14 @@ const octokit = new Octokit({ auth: GITHUB_TOKEN });
  * @returns {Promise<void>} Resolves when the action is complete.
  */
 export async function run(): Promise<void> {
-  core.debug(`${process.env.GITHUB_EVENT_PATH}`);
-  const pr = await getPullRequest();
-  const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH ?? "", "utf8"));
+  
+  core.debug(`github-event-path: ${process.env.GITHUB_EVENT_PATH}`);
+
+  const { repository, number, event } = JSON.parse(
+    readFileSync(process.env.GITHUB_EVENT_PATH || "", "utf8")
+  );
+
+  const pr = await getPullRequest(repository, number);
 
   core.debug(`event.action: ${event.action}`);
 
@@ -79,10 +84,7 @@ interface PullRequest {
   description: string;
 }
 
-async function getPullRequest(): Promise<PullRequest> {
-  const { repository, number } = JSON.parse(
-    readFileSync(process.env.GITHUB_EVENT_PATH || "", "utf8")
-  );
+async function getPullRequest(repository: any, number: number): Promise<PullRequest> {
   const response = await octokit.pulls.get({
     owner: repository.owner.login,
     repo: repository.name,
@@ -101,7 +103,7 @@ async function getPullRequestDiff(
   owner: string,
   repo: string,
   pull_number: number
-): Promise<string | null> {
+): Promise<any> {
   const response = await octokit.pulls.get({
     owner,
     repo,
