@@ -1,12 +1,19 @@
 # Code review action
 
 ## 配置
+  
   前往Repository->Settings->Secrets and variables
-  1.添加Repository secrets 
-    GIT_HUB_API_KEY
-    SMART_CODER_API_KEY
-  2.添加Repository variables
+
+  1. 添加Repository secrets 
+    ```
+      GIT_HUB_API_KEY
+      SMART_CODER_API_KEY
+    ```
+  2. 添加Repository variables
+    ```
     SMART_CODER_API_URL
+    ```
+
 
 ### 使用
 ```
