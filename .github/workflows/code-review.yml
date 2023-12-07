@@ -48,6 +48,7 @@ jobs:
         timeout-minutes: 30
         with:
           GITHUB_TOKEN: ${{ secrets.GIT_HUB_API_KEY }}
+          GITHUB_EVENT_PATH: ${{process.env.GITHUB_EVENT_PATH}}
           SMART_CODER_API_URL: ${{ vars.SMART_CODER_API_URL }}
           SMART_CODER_API_KEY: ${{ secrets.SMART_CODER_API_KEY }}
           exclude: "yarn.lock,dist/**"

@@ -8,8 +8,10 @@ import axios from 'axios';
 axios.defaults.timeout = 300000;
 
 const GITHUB_TOKEN: string = core.getInput("GITHUB_TOKEN");
+const GITHUB_EVENT_PATH: string = core.getInput("GITHUB_EVENT_PATH");
 const SMART_CODER_API_URL: string = core.getInput("SMART_CODER_API_URL");
 const SMART_CODER_API_KEY: string = core.getInput("SMART_CODER_API_KEY");
+
 
 const octokit = new Octokit({ auth: GITHUB_TOKEN });
 
@@ -19,10 +21,10 @@ const octokit = new Octokit({ auth: GITHUB_TOKEN });
  */
 export async function run(): Promise<void> {
   
-  console.log(`github-event-path: ${process.env.GITHUB_EVENT_PATH}`);
+  console.log(`github-event-path: ${GITHUB_EVENT_PATH}`);
 
   const { action, repository, number, before, head  } = JSON.parse(
-    readFileSync(process.env.GITHUB_EVENT_PATH || "", "utf8")
+    readFileSync(GITHUB_EVENT_PATH || "", "utf8")
   );
 
   const pr = await getPullRequest(repository, number);
