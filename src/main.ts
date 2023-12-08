@@ -153,7 +153,7 @@ function createComment(
   file: File,
   responses: Array<{
     lineNumber: string
-    reviewComment: string
+    reviewComments: string
   }>
 ): Array<{ body: string; path: string; line: number }> {
   return responses.flatMap(v => {
@@ -161,7 +161,7 @@ function createComment(
       return []
     }
     return {
-      body: v.reviewComment,
+      body: v.reviewComments,
       path: file.to,
       line: Number(v.lineNumber)
     }
@@ -205,7 +205,7 @@ const api = {
 
     const read = async () => {
       return new Promise<{
-        reviews: [{ lineNumber: string; reviewComment: string }]
+        reviews: [{ lineNumber: string; reviewComments: string }]
       }>((resolve, reject) => {
         axios({
           method: 'post',

@@ -14495,7 +14495,7 @@ function createComment(file, responses) {
             return [];
         }
         return {
-            body: v.reviewComment,
+            body: v.reviewComments,
             path: file.to,
             line: Number(v.lineNumber)
         };
