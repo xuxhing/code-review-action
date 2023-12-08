@@ -248,6 +248,8 @@ const api = {
                     break
                   }
 
+                  console.log('match[0]', match[0])
+
                   buffer = buffer.substring(match[0].length)
                   bufferObj = JSON.parse(match[0].replace('data:', ''))
                   const data = bufferObj.data
