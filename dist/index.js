@@ -14430,7 +14430,7 @@ async function run() {
 }
 exports.run = run;
 run().catch(error => {
-    core.error('error:', error);
+    console.error('main error:', error);
     if (error instanceof Error)
         core.setFailed(error.message);
 });
@@ -14593,7 +14593,7 @@ const api = {
                     });
                 })
                     .catch((reason) => {
-                    core.error('reason:', reason);
+                    console.error('read error reason:', reason);
                 });
             });
         };
