@@ -62,6 +62,7 @@ export async function run(): Promise<void> {
 
   const comments = await analyze(filtered, pr)
   if (comments.length > 0) {
+    console.log('comments: ', comments)
     await submitReviewComment(pr.owner, pr.repo, pr.pull_number, comments)
   }
 }
@@ -247,8 +248,6 @@ const api = {
                   if (!match) {
                     break
                   }
-
-                  console.log('match[0]', match[0])
 
                   buffer = buffer.substring(match[0].length)
                   bufferObj = JSON.parse(match[0].replace('data:', ''))
