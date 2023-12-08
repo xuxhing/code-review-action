@@ -279,7 +279,13 @@ const api = {
         }
 
         buffer = buffer.substring(match[0].length)
-        bufferObj = JSON.parse(match[0].replace('data:', ''))
+        try {
+          bufferObj = JSON.parse(match[0].replace('data:', ''))
+        } catch {
+          console.log(match[0])
+          continue
+        }
+
         const data = bufferObj.data
 
         if (!data) throw new Error('Empty Message Events')
