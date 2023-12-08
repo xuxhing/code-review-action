@@ -46,7 +46,7 @@ export async function run(): Promise<void> {
   }
 
   if (!diff) {
-    core.debug('No diff found')
+    core.debug('No diff found!')
     return
   }
 
@@ -125,7 +125,6 @@ async function analyze(
     for (const chunk of file.chunks) {
       const diff = format(chunk)
       const response = await api.request(file, pr, diff)
-      console.log('response:', response)
       // const aiResponse = await getAIResponse(prompt);
       if (response) {
         const newComments = createComment(file, response.reviews)
@@ -200,9 +199,6 @@ const api = {
       return
     }
 
-    console.log('diff:\n', params)
-    console.log('diff end ------- : ', file.to)
-
     const read = async () => {
       return new Promise<{
         reviews: [{ lineNumber: string; reviewComments: string }]
@@ -251,14 +247,14 @@ const api = {
                 try {
                   result = JSON.parse(message.join(''))
                 } catch (error) {
-                  console.error('end parse error:', error)
+                  console.error('end parse error:\n', error)
                 }
               }
               resolve(result)
             })
           })
           .catch((reason: any) => {
-            console.error('read error reason:', reason)
+            console.error('read error reason: ', reason)
           })
       })
     }
@@ -282,7 +278,7 @@ const api = {
         try {
           bufferObj = JSON.parse(match[0].replace('data:', ''))
         } catch {
-          console.log(match[0])
+          console.log('parse fail: ', match[0])
           continue
         }
 

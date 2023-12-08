@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses:  xuxhing/code-review-action@latest
         with:
-          GITHUB_TOKEN: ${{ secrets.GIT_HUB_API_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
           SMART_CODER_API_URL: ${{ vars.SMART_CODER_API_URL }}
           SMART_CODER_API_KEY: ${{ secrets.SMART_CODER_API_KEY }}
           exclude: "yarn.lock,dist/**"
