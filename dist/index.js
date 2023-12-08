@@ -14523,7 +14523,7 @@ const api = {
             console.error('Unsupported api');
             return;
         }
-        console.log('file.to: ', file.to);
+        console.log('diff:\n', params);
         const read = async () => {
             return new Promise((resolve, reject) => {
                 (0, axios_1.default)({
@@ -14568,7 +14568,6 @@ const api = {
                                 if (!match) {
                                     break;
                                 }
-                                console.log(match[0]);
                                 buffer = buffer.substring(match[0].length);
                                 bufferObj = JSON.parse(match[0].replace('data:', ''));
                                 const data = bufferObj.data;
@@ -14579,11 +14578,17 @@ const api = {
                         }
                     });
                     reader.on('end', () => {
+                        let result = { reviews: [] };
                         console.log('reader end:', chunks.join(''));
-                        if (chunks.length === 0) {
-                            return { reviews: [] };
+                        if (chunks.length > 0) {
+                            try {
+                                result = JSON.parse(chunks.join(''));
+                            }
+                            catch (error) {
+                                console.error('end parse error:', error);
+                            }
                         }
-                        resolve(JSON.parse(chunks.join('')));
+                        resolve(result);
                     });
                 })
                     .catch((reason) => {
