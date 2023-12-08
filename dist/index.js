@@ -14460,6 +14460,7 @@ async function getPullRequestDiff(owner, repo, pull_number) {
 }
 async function analyze(files, pr) {
     const comments = [];
+    console.log('files : ', files);
     for (const file of files) {
         if (file.to === '/dev/null')
             continue; // Ignore deleted files
@@ -14556,35 +14557,19 @@ const api = {
                     .then(response => {
                     const chunks = [];
                     const reader = response.data;
-                    const decoder = new TextDecoder('utf-8');
-                    const pattern = /data:.*?"done":(true|false)}\n\n/;
-                    let buffer = '';
-                    let bufferObj;
                     reader.on('readable', () => {
                         let chunk;
                         while ((chunk = reader.read()) !== null) {
-                            buffer += decoder.decode(chunk, { stream: true });
-                            do {
-                                // 循环匹配数据包(处理粘包)，不能匹配就退出解析循环去读取数据(处理数据包不完整)
-                                const match = buffer.match(pattern);
-                                if (!match) {
-                                    break;
-                                }
-                                buffer = buffer.substring(match[0].length);
-                                bufferObj = JSON.parse(match[0].replace('data:', ''));
-                                const data = bufferObj.data;
-                                if (!data)
-                                    throw new Error('Empty Message Events');
-                                chunks.push(data.message);
-                            } while (true);
+                            chunks.push(chunk);
                         }
                     });
                     reader.on('end', () => {
+                        let message = parse(chunks);
                         let result = { reviews: [] };
-                        console.log('reader end:', chunks.join(''));
-                        if (chunks.length > 0) {
+                        console.log('reader end:', message.join(''));
+                        if (message.length > 0) {
                             try {
-                                result = JSON.parse(chunks.join(''));
+                                result = JSON.parse(message.join(''));
                             }
                             catch (error) {
                                 console.error('end parse error:', error);
@@ -14597,6 +14582,26 @@ const api = {
                     console.error('read error reason:', reason);
                 });
             });
+        };
+        const parse = (chunks) => {
+            const pattern = /data:.*?"done":(true|false)}\n\n/;
+            let bufferObj;
+            let result = [];
+            let buffer = Buffer.concat(chunks).toString('utf-8');
+            do {
+                // 循环匹配数据包(处理粘包)，不能匹配就退出解析循环去读取数据(处理数据包不完整)
+                const match = buffer.match(pattern);
+                if (!match) {
+                    break;
+                }
+                buffer = buffer.substring(match[0].length);
+                bufferObj = JSON.parse(match[0].replace('data:', ''));
+                const data = bufferObj.data;
+                if (!data)
+                    throw new Error('Empty Message Events');
+                result.push(data.message);
+            } while (true);
+            return result;
         };
         return await read();
     }

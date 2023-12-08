@@ -118,7 +118,7 @@ async function analyze(
 ): Promise<Array<{ body: string; path: string; line: number }>> {
   const comments: Array<{ body: string; path: string; line: number }> = []
 
-  console.log('files : ', files);
+  console.log('files : ', files)
 
   for (const file of files) {
     if (file.to === '/dev/null') continue // Ignore deleted files
@@ -239,12 +239,12 @@ const api = {
             reader.on('readable', () => {
               let chunk
               while ((chunk = reader.read()) !== null) {
-                chunks.push(chunk);
+                chunks.push(chunk)
               }
             })
 
             reader.on('end', () => {
-              let message = parse(chunks);
+              let message = parse(chunks)
               let result: any = { reviews: [] }
               console.log('reader end:', message.join(''))
               if (message.length > 0) {
@@ -269,7 +269,7 @@ const api = {
       let bufferObj: any
       let result: string[] = []
 
-      let buffer = Buffer.concat(chunks).toString('utf-8');
+      let buffer = Buffer.concat(chunks).toString('utf-8')
       do {
         // 循环匹配数据包(处理粘包)，不能匹配就退出解析循环去读取数据(处理数据包不完整)
         const match = buffer.match(pattern)
@@ -286,7 +286,7 @@ const api = {
         result.push(data.message)
       } while (true)
 
-      return result;
+      return result
     }
 
     return await read()
