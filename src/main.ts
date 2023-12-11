@@ -152,7 +152,7 @@ async function analyze(
     if (file.to === '/dev/null') continue // Ignore deleted files
     for (const chunk of file.chunks) {
       const diff = format(chunk)
-      console.log('diff:', diff)
+      console.log('diff:\n', diff)
       const response = await api.request(file, pr, diff)
       // const aiResponse = await getAIResponse(prompt);
       if (response) {
@@ -167,9 +167,6 @@ async function analyze(
 }
 
 function format(chunk: Chunk): string {
-  console.log('chunk: ', chunk)
-  console.log('\n chunk.changes', chunk.changes)
-
   return `\`\`\`diff
   ${chunk.content}
   ${chunk.changes.map(c => `${c.content}`).join('\n')}
