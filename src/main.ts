@@ -268,12 +268,12 @@ const api = {
             reader.on('end', () => {
               let message = parse(chunks)
               let result: any = { reviews: [] }
-              console.log('reader end:', message.join(''))
               if (message.length > 0) {
                 try {
                   result = JSON.parse(message.join(''))
                 } catch (error) {
-                  console.error('end parse error:\n', error)
+                  console.error('end parse error:\n', error, '\n')
+                  console.log('message: \n', message.join(''), '\n')
                 }
               }
               resolve(result)
