@@ -14504,9 +14504,10 @@ async function analyze(files, pr) {
     return comments;
 }
 function format(chunk) {
-    return `
+    return `\`\`diff
   ${chunk.content}
   ${chunk.changes.map(c => `${c.content}`).join('\n')}
+  \`\`\`
   `;
 }
 function createComment(file, responses) {
@@ -14515,7 +14516,7 @@ function createComment(file, responses) {
             return [];
         }
         return {
-            body: v.reviewComments,
+            body: v.reviewComment,
             path: file.to,
             line: Number(v.lineNumber)
         };
@@ -14585,8 +14586,14 @@ const api = {
                         let message = parse(chunks);
                         let result = { reviews: [] };
                         if (message.length > 0) {
+                            let str = message.join('');
+                            const regex = /```json\n([\s\S]+?)\n```/;
+                            const match = str.match(regex);
+                            if (match) {
+                                str = match[1];
+                            }
                             try {
-                                result = JSON.parse(message.join(''));
+                                result = JSON.parse(str);
                             }
                             catch (error) {
                                 console.error('end parse error:\n', error, '\n');

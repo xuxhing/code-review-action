@@ -167,9 +167,10 @@ async function analyze(
 }
 
 function format(chunk: Chunk): string {
-  return `
+  return `\`\`diff
   ${chunk.content}
   ${chunk.changes.map(c => `${c.content}`).join('\n')}
+  \`\`\`
   `
 }
 
@@ -177,7 +178,7 @@ function createComment(
   file: File,
   responses: Array<{
     lineNumber: string
-    reviewComments: string
+    reviewComment: string
   }>
 ): Array<{ body: string; path: string; line: number }> {
   return responses.flatMap(v => {
@@ -185,7 +186,7 @@ function createComment(
       return []
     }
     return {
-      body: v.reviewComments,
+      body: v.reviewComment,
       path: file.to,
       line: Number(v.lineNumber)
     }
@@ -226,7 +227,7 @@ const api = {
 
     const read = async () => {
       return new Promise<{
-        reviews: [{ lineNumber: string; reviewComments: string }]
+        reviews: [{ lineNumber: string; reviewComment: string }]
       }>((resolve, reject) => {
         axios({
           method: 'post',
@@ -268,8 +269,16 @@ const api = {
               let message = parse(chunks)
               let result: any = { reviews: [] }
               if (message.length > 0) {
+                let str = message.join('')
+
+                const regex = /```json\n([\s\S]+?)\n```/
+                const match = str.match(regex)
+                if (match) {
+                  str = match[1]
+                }
+
                 try {
-                  result = JSON.parse(message.join(''))
+                  result = JSON.parse(str)
                 } catch (error) {
                   console.error('end parse error:\n', error, '\n')
                   console.log('message: \n', message.join(''), '\n')
