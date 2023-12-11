@@ -214,11 +214,6 @@ const api = {
                 key: 'diff',
                 type: 'TEXT',
                 value: params
-              },
-              {
-                key: 'file',
-                type: 'TEXT',
-                value: file.to
               }
             ]
           },
