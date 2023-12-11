@@ -167,7 +167,7 @@ async function analyze(
 }
 
 function format(chunk: Chunk): string {
-  return `\`\`diff
+  return `\`\`\`diff
   ${chunk.content}
   ${chunk.changes.map(c => `${c.content}`).join('\n')}
   \`\`\`

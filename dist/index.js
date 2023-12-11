@@ -14504,7 +14504,7 @@ async function analyze(files, pr) {
     return comments;
 }
 function format(chunk) {
-    return `\`\`diff
+    return `\`\`\`diff
   ${chunk.content}
   ${chunk.changes.map(c => `${c.content}`).join('\n')}
   \`\`\`
