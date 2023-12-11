@@ -69,7 +69,7 @@ export async function run(): Promise<void> {
 }
 
 run().catch(error => {
-  console.log('main error:', error)
+  console.error('main error:', error)
   if (error instanceof Error) core.setFailed(error.message)
 })
 
@@ -281,7 +281,7 @@ const api = {
         try {
           bufferObj = JSON.parse(match[0].replace('data:', ''))
         } catch {
-          console.log('parse fail: ', match[0])
+          console.error('parse fail: ', match[0])
           continue
         }
 
