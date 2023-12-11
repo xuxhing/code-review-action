@@ -27,7 +27,7 @@ export async function run(): Promise<void> {
   console.log(`event.action: ${data.action}`)
 
   let diff: string | null
-  if (data.action === 'opened' || data.action === 'reopened') {
+  if (data.action === 'opened') {
     diff = await getPullRequestDiff(pr.owner, pr.repo, pr.pull_number)
   } else if (data.action === 'synchronize') {
     const response = await octokit.repos.compareCommits({
@@ -41,12 +41,12 @@ export async function run(): Promise<void> {
     })
     diff = String(response.data)
   } else {
-    core.warning(`Unsupported event: ${data.action}`)
+    console.log(`Unsupported event: ${data.action}`)
     return
   }
 
   if (!diff) {
-    core.debug('No diff found!')
+    console.log('No diff found!')
     return
   }
 
@@ -69,7 +69,7 @@ export async function run(): Promise<void> {
 }
 
 run().catch(error => {
-  console.error('main error:', error)
+  console.log('main error:', error)
   if (error instanceof Error) core.setFailed(error.message)
 })
 
@@ -111,35 +111,6 @@ async function getPullRequestDiff(
     mediaType: { format: 'diff' }
   })
   return response.data
-}
-
-async function parsePullRequestDiff(diffContent: string) {
-  const files: any = {}
-  const diffLines = diffContent.split('\n')
-
-  let currentFile = null
-  let currentLines: string[] = []
-
-  for (const line of diffLines) {
-    if (line.startsWith('diff --git')) {
-      // Start of a new file
-      if (currentFile) {
-        files[currentFile] = currentLines.join('\n')
-      }
-      currentFile = line.substring('diff --git'.length + 1)
-      currentLines = [line]
-    } else {
-      // Add the line to the current file's diff
-      currentLines.push(line)
-    }
-  }
-
-  // Add the last file's diff
-  if (currentFile) {
-    files[currentFile] = currentLines.join('\n')
-  }
-
-  return files
 }
 
 async function analyze(
@@ -298,11 +269,11 @@ const api = {
 
     const parse = (chunks: Buffer[]) => {
       const pattern = /data:.*?"done":(true|false)}\n\n/
-
-      let bufferObj: any
       let result: string[] = []
 
+      let bufferObj: any
       let buffer = Buffer.concat(chunks).toString('utf-8')
+
       do {
         // 循环匹配数据包(处理粘包)，不能匹配就退出解析循环去读取数据(处理数据包不完整)
         const match = buffer.match(pattern)
