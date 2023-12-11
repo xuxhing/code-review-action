@@ -51,20 +51,25 @@ export async function run(): Promise<void> {
   }
 
   const parsed = parseDiff(diff)
-  const excludePatterns = core
-    .getInput('exclude')
-    .split(',')
-    .map(s => s.trim())
 
-  const filtered = parsed.filter(file => {
-    return !excludePatterns.some(pattern => minimatch(file.to ?? '', pattern))
-  })
+  console.log('\nparsed: \n', parsed)
 
-  const comments = await analyze(filtered, pr)
-  if (comments.length > 0) {
-    console.log('comments: ', comments)
-    await submitReviewComment(pr.owner, pr.repo, pr.pull_number, comments)
-  }
+  console.log('\nparsePullRequestDiff: \n', parsePullRequestDiff(diff))
+
+  // const excludePatterns = core
+  //   .getInput('exclude')
+  //   .split(',')
+  //   .map(s => s.trim())
+
+  // const filtered = parsed.filter(file => {
+  //   return !excludePatterns.some(pattern => minimatch(file.to ?? '', pattern))
+  // })
+
+  // const comments = await analyze(filtered, pr)
+  // if (comments.length > 0) {
+  //   console.log('comments: ', comments)
+  //   await submitReviewComment(pr.owner, pr.repo, pr.pull_number, comments)
+  // }
 }
 
 run().catch(error => {
@@ -110,6 +115,35 @@ async function getPullRequestDiff(
     mediaType: { format: 'diff' }
   })
   return response.data
+}
+
+async function parsePullRequestDiff(diffContent: string) {
+  const files: any = {}
+  const diffLines = diffContent.split('\n')
+
+  let currentFile = null
+  let currentLines: string[] = []
+
+  for (const line of diffLines) {
+    if (line.startsWith('diff --git')) {
+      // Start of a new file
+      if (currentFile) {
+        files[currentFile] = currentLines.join('\n')
+      }
+      currentFile = line.substring('diff --git'.length + 1)
+      currentLines = [line]
+    } else {
+      // Add the line to the current file's diff
+      currentLines.push(line)
+    }
+  }
+
+  // Add the last file's diff
+  if (currentFile) {
+    files[currentFile] = currentLines.join('\n')
+  }
+
+  return files
 }
 
 async function analyze(

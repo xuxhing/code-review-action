@@ -9,19 +9,22 @@ Example `.github/workflows/code-review.yml`
 
 ```
 name: Code review
+
 on:
   pull_request:
     types:
       - opened
       - synchronize
+
+permissions: write-all
+
 jobs:
   code-review:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
+    
     steps:
-      - uses:  xuxhing/code-review-action@latest
+      - name: Code Review
+        uses: xuxhing/code-review-action@latest
         with:
           GITHUB_TOKEN: ${{ github.token }}
           SMART_CODER_API_URL: ${{ vars.SMART_CODER_API_URL }}
@@ -34,7 +37,6 @@ jobs:
 
 ### `GITHUB_TOKEN`
     description: "GitHub token to interact with the repository."
-    required: true
 ### `SMART_CODER_API_URL`
     description: "SmartCoder api url."
     required: true
