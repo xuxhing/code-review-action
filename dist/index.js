@@ -14504,10 +14504,9 @@ async function analyze(files, pr) {
     return comments;
 }
 function format(chunk) {
-    return `\`\`\`diff
+    return `
   ${chunk.content}
   ${chunk.changes.map(c => `${c.content}`).join('\n')}
-  \`\`\`
   `;
 }
 function createComment(file, responses) {
