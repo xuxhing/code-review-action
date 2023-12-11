@@ -56,16 +56,16 @@ export async function run(): Promise<void> {
 
   console.log('\nparsePullRequestDiff: \n', parsePullRequestDiff(diff))
 
-  // const excludePatterns = core
-  //   .getInput('exclude')
-  //   .split(',')
-  //   .map(s => s.trim())
+  const excludePatterns = core
+    .getInput('exclude')
+    .split(',')
+    .map(s => s.trim())
 
-  // const filtered = parsed.filter(file => {
-  //   return !excludePatterns.some(pattern => minimatch(file.to ?? '', pattern))
-  // })
+  const filtered = parsed.filter(file => {
+    return !excludePatterns.some(pattern => minimatch(file.to ?? '', pattern))
+  })
 
-  // const comments = await analyze(filtered, pr)
+  const comments = await analyze(filtered, pr)
   // if (comments.length > 0) {
   //   console.log('comments: ', comments)
   //   await submitReviewComment(pr.owner, pr.repo, pr.pull_number, comments)
@@ -158,14 +158,14 @@ async function analyze(
     if (file.to === '/dev/null') continue // Ignore deleted files
     for (const chunk of file.chunks) {
       const diff = format(chunk)
-      const response = await api.request(file, pr, diff)
-      // const aiResponse = await getAIResponse(prompt);
-      if (response) {
-        const newComments = createComment(file, response.reviews)
-        if (newComments) {
-          comments.push(...newComments)
-        }
-      }
+      // const response = await api.request(file, pr, diff)
+      // // const aiResponse = await getAIResponse(prompt);
+      // if (response) {
+      //   const newComments = createComment(file, response.reviews)
+      //   if (newComments) {
+      //     comments.push(...newComments)
+      //   }
+      // }
     }
   }
   return comments
@@ -173,6 +173,8 @@ async function analyze(
 
 function format(chunk: Chunk): string {
   console.log('chunk: ', chunk)
+  console.log('\n chunk.changes', chunk.changes)
+
   return `\`\`\`diff
   ${chunk.content}
   ${chunk.changes
