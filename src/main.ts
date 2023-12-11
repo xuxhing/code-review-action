@@ -172,6 +172,7 @@ async function analyze(
 }
 
 function format(chunk: Chunk): string {
+  console.log('chunk: ', chunk)
   return `\`\`\`diff
   ${chunk.content}
   ${chunk.changes

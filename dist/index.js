@@ -14225,6 +14225,7 @@ async function analyze(files, pr) {
     return comments;
 }
 function format(chunk) {
+    console.log('chunk: ', chunk);
     return `\`\`\`diff
   ${chunk.content}
   ${chunk.changes
