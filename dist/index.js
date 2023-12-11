@@ -14390,7 +14390,7 @@ const octokit = new rest_1.Octokit({ auth: GITHUB_TOKEN });
 async function run() {
     const data = JSON.parse((0, fs_1.readFileSync)(process.env.GITHUB_EVENT_PATH || '', 'utf8'));
     const pr = await getPullRequest(data.repository, data.number);
-    core.debug(`event.action: ${data.action}`);
+    console.log(`event.action: ${data.action}`);
     let diff;
     if (data.action === 'opened' || data.action === 'reopened') {
         diff = await getPullRequestDiff(pr.owner, pr.repo, pr.pull_number);
@@ -14416,8 +14416,6 @@ async function run() {
         return;
     }
     const parsed = (0, parse_diff_1.default)(diff);
-    console.log('\nparsed: \n', parsed);
-    console.log('\nparsePullRequestDiff: \n', parsePullRequestDiff(diff));
     const excludePatterns = core
         .getInput('exclude')
         .split(',')
@@ -14426,10 +14424,10 @@ async function run() {
         return !excludePatterns.some(pattern => (0, minimatch_1.default)(file.to ?? '', pattern));
     });
     const comments = await analyze(filtered, pr);
-    // if (comments.length > 0) {
-    //   console.log('comments: ', comments)
-    //   await submitReviewComment(pr.owner, pr.repo, pr.pull_number, comments)
-    // }
+    if (comments.length > 0) {
+        console.log('comments: ', comments);
+        await submitReviewComment(pr.owner, pr.repo, pr.pull_number, comments);
+    }
 }
 exports.run = run;
 run().catch(error => {
@@ -14487,20 +14485,20 @@ async function parsePullRequestDiff(diffContent) {
 }
 async function analyze(files, pr) {
     const comments = [];
-    console.log('files : ', files);
     for (const file of files) {
         if (file.to === '/dev/null')
             continue; // Ignore deleted files
         for (const chunk of file.chunks) {
             const diff = format(chunk);
-            // const response = await api.request(file, pr, diff)
-            // // const aiResponse = await getAIResponse(prompt);
-            // if (response) {
-            //   const newComments = createComment(file, response.reviews)
-            //   if (newComments) {
-            //     comments.push(...newComments)
-            //   }
-            // }
+            console.log('diff:', diff);
+            const response = await api.request(file, pr, diff);
+            // const aiResponse = await getAIResponse(prompt);
+            if (response) {
+                const newComments = createComment(file, response.reviews);
+                if (newComments) {
+                    comments.push(...newComments);
+                }
+            }
         }
     }
     return comments;
@@ -14510,10 +14508,7 @@ function format(chunk) {
     console.log('\n chunk.changes', chunk.changes);
     return `\`\`\`diff
   ${chunk.content}
-  ${chunk.changes
-        // @ts-expect-error - ln and ln2 exists where needed
-        .map(c => `${c.ln ? c.ln : c.ln2} ${c.content}`)
-        .join('\n')}
+  ${chunk.changes.map(c => `${c.content}`).join('\n')}
   \`\`\`
   `;
 }

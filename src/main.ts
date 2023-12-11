@@ -24,7 +24,7 @@ export async function run(): Promise<void> {
 
   const pr = await getPullRequest(data.repository, data.number)
 
-  core.debug(`event.action: ${data.action}`)
+  console.log(`event.action: ${data.action}`)
 
   let diff: string | null
   if (data.action === 'opened' || data.action === 'reopened') {
@@ -52,10 +52,6 @@ export async function run(): Promise<void> {
 
   const parsed = parseDiff(diff)
 
-  console.log('\nparsed: \n', parsed)
-
-  console.log('\nparsePullRequestDiff: \n', parsePullRequestDiff(diff))
-
   const excludePatterns = core
     .getInput('exclude')
     .split(',')
@@ -66,10 +62,10 @@ export async function run(): Promise<void> {
   })
 
   const comments = await analyze(filtered, pr)
-  // if (comments.length > 0) {
-  //   console.log('comments: ', comments)
-  //   await submitReviewComment(pr.owner, pr.repo, pr.pull_number, comments)
-  // }
+  if (comments.length > 0) {
+    console.log('comments: ', comments)
+    await submitReviewComment(pr.owner, pr.repo, pr.pull_number, comments)
+  }
 }
 
 run().catch(error => {
@@ -152,20 +148,19 @@ async function analyze(
 ): Promise<Array<{ body: string; path: string; line: number }>> {
   const comments: Array<{ body: string; path: string; line: number }> = []
 
-  console.log('files : ', files)
-
   for (const file of files) {
     if (file.to === '/dev/null') continue // Ignore deleted files
     for (const chunk of file.chunks) {
       const diff = format(chunk)
-      // const response = await api.request(file, pr, diff)
-      // // const aiResponse = await getAIResponse(prompt);
-      // if (response) {
-      //   const newComments = createComment(file, response.reviews)
-      //   if (newComments) {
-      //     comments.push(...newComments)
-      //   }
-      // }
+      console.log('diff:', diff)
+      const response = await api.request(file, pr, diff)
+      // const aiResponse = await getAIResponse(prompt);
+      if (response) {
+        const newComments = createComment(file, response.reviews)
+        if (newComments) {
+          comments.push(...newComments)
+        }
+      }
     }
   }
   return comments
@@ -177,10 +172,7 @@ function format(chunk: Chunk): string {
 
   return `\`\`\`diff
   ${chunk.content}
-  ${chunk.changes
-    // @ts-expect-error - ln and ln2 exists where needed
-    .map(c => `${c.ln ? c.ln : c.ln2} ${c.content}`)
-    .join('\n')}
+  ${chunk.changes.map(c => `${c.content}`).join('\n')}
   \`\`\`
   `
 }
